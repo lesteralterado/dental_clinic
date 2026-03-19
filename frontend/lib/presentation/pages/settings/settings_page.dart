@@ -43,7 +43,7 @@ class SettingsPage extends StatelessWidget {
           BlocBuilder<ThemeBloc, ThemeState>(
             builder: (context, state) {
               return SwitchListTile(
-                leading: const Icon(Icons.dark_mode),
+                secondary: const Icon(Icons.dark_mode),
                 title: const Text('Dark Mode'),
                 value: state.isDarkMode,
                 onChanged: (_) => context.read<ThemeBloc>().add(ToggleTheme()),

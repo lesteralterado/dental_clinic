@@ -1,0 +1,59 @@
+# ===========================
+# Dental Clinic Project GitIgnore
+# ===========================
+
+# ===========================
+# General / OS Files
+# ===========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+
+# ===========================
+# Backend (Node.js/Express)
+# ===========================
+backend/node_modules/
+backend/dist/
+backend/build/
+backend/logs/
+backend/*.log
+backend/npm-debug.log*
+backend/yarn-debug.log*
+backend/yarn-error.log*
+backend/.env
+
+# ===========================
+# Frontend (Flutter)
+# ===========================
+frontend/.dart_tool/
+frontend/.packages
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.pub-cache/
+frontend/.pub/
+frontend/build/
+frontend/.idea/
+frontend/*.iml
+frontend/.vscode/
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Podfile.lock
+frontend/linux/.cmake/
+frontend/linux/cmake_install.cmake
+frontend/macos/Flutter/Generated.xcconfig
+frontend/macos/.symlinks/
+frontend/macos/Pods/
+frontend/macos/Podfile.lock
+frontend/web/
+frontend/windows/.cmake/
+frontend/windows/cmake_install.cmake
+
+# ===========================
+# Keep these files
+# ===========================
+!backend/.env.example

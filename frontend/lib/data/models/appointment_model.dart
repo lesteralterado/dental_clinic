@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'patient_model.dart';
 
-/// Appointment status enum
+/// Appointment status enum - matches backend (SCHEDULED, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW)
 enum AppointmentStatus {
   scheduled,
   confirmed,
@@ -27,24 +27,44 @@ enum AppointmentStatus {
     }
   }
 
+  /// Convert from backend string (e.g., 'SCHEDULED' -> scheduled)
   static AppointmentStatus fromString(String value) {
-    switch (value.toLowerCase()) {
-      case 'scheduled':
+    switch (value.toUpperCase()) {
+      case 'SCHEDULED':
         return AppointmentStatus.scheduled;
-      case 'confirmed':
+      case 'CONFIRMED':
         return AppointmentStatus.confirmed;
-      case 'in_progress':
-      case 'inprogress':
+      case 'IN_PROGRESS':
+      case 'INPROGRESS':
         return AppointmentStatus.inProgress;
-      case 'completed':
+      case 'COMPLETED':
         return AppointmentStatus.completed;
-      case 'cancelled':
+      case 'CANCELLED':
+      case 'CANCELED':
         return AppointmentStatus.cancelled;
-      case 'no_show':
-      case 'noshow':
+      case 'NO_SHOW':
+      case 'NOSHOW':
         return AppointmentStatus.noShow;
       default:
         return AppointmentStatus.scheduled;
+    }
+  }
+
+  /// Convert to backend string (e.g., scheduled -> 'SCHEDULED')
+  String toBackendString() {
+    switch (this) {
+      case AppointmentStatus.scheduled:
+        return 'SCHEDULED';
+      case AppointmentStatus.confirmed:
+        return 'CONFIRMED';
+      case AppointmentStatus.inProgress:
+        return 'IN_PROGRESS';
+      case AppointmentStatus.completed:
+        return 'COMPLETED';
+      case AppointmentStatus.cancelled:
+        return 'CANCELLED';
+      case AppointmentStatus.noShow:
+        return 'NO_SHOW';
     }
   }
 }

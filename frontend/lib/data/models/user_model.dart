@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// User role enum
+/// User role enum - matches backend (ADMIN, DOCTOR, RECEPTIONIST)
 enum UserRole {
   admin,
   doctor,
@@ -17,16 +17,29 @@ enum UserRole {
     }
   }
 
+  /// Convert from backend string (e.g., 'ADMIN' -> admin)
   static UserRole fromString(String value) {
-    switch (value.toLowerCase()) {
-      case 'admin':
+    switch (value.toUpperCase()) {
+      case 'ADMIN':
         return UserRole.admin;
-      case 'doctor':
+      case 'DOCTOR':
         return UserRole.doctor;
-      case 'receptionist':
+      case 'RECEPTIONIST':
         return UserRole.receptionist;
       default:
         return UserRole.receptionist;
+    }
+  }
+
+  /// Convert to backend string (e.g., admin -> 'ADMIN')
+  String toBackendString() {
+    switch (this) {
+      case UserRole.admin:
+        return 'ADMIN';
+      case UserRole.doctor:
+        return 'DOCTOR';
+      case UserRole.receptionist:
+        return 'RECEPTIONIST';
     }
   }
 }

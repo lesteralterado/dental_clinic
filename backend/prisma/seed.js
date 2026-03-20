@@ -4,38 +4,36 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'admin@dentalclinic.com';
-  const password = 'admin123';
-  const name = 'Administrator';
+  // Seed users matching the mock data
+  const users = [
+    { email: 'admin@dental.com', password: 'admin123', name: 'Admin User', role: 'ADMIN' },
+    { email: 'doctor@dental.com', password: 'doctor123', name: 'Dr. Sarah Johnson', role: 'DOCTOR' },
+    { email: 'receptionist@dental.com', password: 'reception123', name: 'Maria Garcia', role: 'RECEPTIONIST' },
+  ];
 
-  // Check if user already exists
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  });
+  for (const userData of users) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: userData.email },
+    });
 
-  if (existingUser) {
-    console.log('Admin user already exists!');
-    return;
+    if (!existingUser) {
+      const passwordHash = await bcrypt.hash(userData.password, 10);
+      await prisma.user.create({
+        data: {
+          email: userData.email,
+          passwordHash,
+          name: userData.name,
+          role: userData.role,
+          isActive: true,
+        },
+      });
+      console.log(`Created user: ${userData.email} (${userData.role})`);
+    } else {
+      console.log(`User ${userData.email} already exists`);
+    }
   }
 
-  // Hash the password
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  // Create the admin user
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      name,
-      role: 'ADMIN',
-      isActive: true,
-    },
-  });
-
-  console.log('Admin user created successfully!');
-  console.log('Email:', email);
-  console.log('Password:', password);
-  console.log('Role: ADMIN');
+  console.log('Seed completed successfully!');
 }
 
 main()

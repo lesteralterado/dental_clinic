@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../data/models/user_model.dart';
-import '../../../data/repositories/mock_data_repository.dart';
+import '../../../data/repositories/auth_repository.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -55,9 +55,13 @@ class AuthError extends AuthState {
 // BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final FlutterSecureStorage _storage;
+  final AuthRepository _authRepository;
 
-  AuthBloc({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage(),
+  AuthBloc({
+    required AuthRepository authRepository,
+    FlutterSecureStorage? storage,
+  })  : _authRepository = authRepository,
+        _storage = storage ?? const FlutterSecureStorage(),
         super(AuthInitial()) {
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<LoginRequested>(_onLoginRequested);
@@ -70,9 +74,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
-      final token = await _storage.read(key: AppConstants.accessToken);
-      if (token != null) {
-        emit(Unauthenticated());
+      final isAuthenticated = await _authRepository.isAuthenticated();
+      if (isAuthenticated) {
+        // Try to get current user from API
+        final user = await _authRepository.getCurrentUser();
+        if (user != null) {
+          emit(Authenticated(user));
+        } else {
+          // Token exists but user not found - clear tokens
+          await _storage.delete(key: AppConstants.accessToken);
+          await _storage.delete(key: AppConstants.refreshToken);
+          emit(Unauthenticated());
+        }
       } else {
         emit(Unauthenticated());
       }
@@ -87,36 +100,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
-      // Use hardcoded authentication from MockDataRepository
-      final mockRepo = MockDataRepository();
-      final authData = mockRepo.authenticate(event.email, event.password);
+      final result = await _authRepository.login(event.email, event.password);
 
-      if (authData == null) {
-        emit(const AuthError('Invalid email or password'));
-        return;
+      if (result.isSuccess && result.user != null) {
+        emit(Authenticated(result.user!));
+      } else {
+        emit(AuthError(result.errorMessage ?? 'Invalid email or password'));
       }
-
-      // Create user from auth data
-      final user = UserModel(
-        id: authData['id'] as String,
-        email: authData['email'] as String,
-        name: authData['name'] as String,
-        role: UserRole.fromString(authData['role'] as String),
-        isActive: authData['isActive'] as bool,
-        createdAt: DateTime.parse(authData['createdAt'] as String),
-        updatedAt: DateTime.parse(authData['updatedAt'] as String),
-      );
-
-      // Save mock tokens
-      await _storage.write(
-        key: AppConstants.accessToken,
-        value: authData['accessToken'] as String,
-      );
-      await _storage.write(
-        key: AppConstants.refreshToken,
-        value: authData['refreshToken'] as String,
-      );
-      emit(Authenticated(user));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -126,8 +116,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    await _storage.delete(key: AppConstants.accessToken);
-    await _storage.delete(key: AppConstants.refreshToken);
+    await _authRepository.logout();
     emit(Unauthenticated());
   }
 }

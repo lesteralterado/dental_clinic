@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../data/repositories/mock_data_repository.dart';
+import '../../di/injection_container.dart';
+import '../../data/repositories/dashboard_repository.dart';
+import '../../data/repositories/patient_repository.dart';
+import '../../data/repositories/appointment_repository.dart';
+import '../../data/models/patient_model.dart';
 import 'patient/patient_list_page.dart';
 import 'appointment/appointment_list_page.dart';
 import 'scan/scan_page.dart';
@@ -60,16 +64,82 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class _HomeContent extends StatelessWidget {
+class _HomeContent extends StatefulWidget {
   const _HomeContent();
 
   @override
+  State<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
+  final DashboardRepository _dashboardRepo = sl<DashboardRepository>();
+  final PatientRepository _patientRepo = sl<PatientRepository>();
+  final AppointmentRepository _appointmentRepo = sl<AppointmentRepository>();
+
+  DashboardStats? _stats;
+  List<dynamic> _recentPatients = [];
+  List<dynamic> _todayAppointments = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final results = await Future.wait([
+        _dashboardRepo.getStats(),
+        _patientRepo.getRecentPatients(limit: 5),
+        _appointmentRepo.getTodayAppointments(),
+      ]);
+
+      setState(() {
+        _stats = results[0] as DashboardStats;
+        _recentPatients = results[1] as List<dynamic>;
+        _todayAppointments = results[2] as List<dynamic>;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final mockRepo = MockDataRepository();
-    final stats = mockRepo.getDashboardStats();
-    final recentPatients = mockRepo.getRecentPatients(limit: 5);
-    final todayAppointments = mockRepo.getTodayAppointments();
     final colorScheme = Theme.of(context).colorScheme;
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Error: $_error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadData,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final statsMap = _stats?.toMap() ?? {};
 
     return SafeArea(
       child: CustomScrollView(
@@ -139,7 +209,7 @@ class _HomeContent extends StatelessWidget {
                     Expanded(
                       child: _StatCard(
                         title: 'Total Patients',
-                        value: '${stats['totalPatients']}',
+                        value: '${statsMap['totalPatients']}',
                         icon: Icons.people,
                         color: colorScheme.primaryContainer,
                         iconColor: colorScheme.onPrimaryContainer,
@@ -149,7 +219,7 @@ class _HomeContent extends StatelessWidget {
                     Expanded(
                       child: _StatCard(
                         title: "Today's Appointments",
-                        value: '${todayAppointments.length}',
+                        value: '${_todayAppointments.length}',
                         icon: Icons.calendar_today,
                         color: colorScheme.secondaryContainer,
                         iconColor: colorScheme.onSecondaryContainer,
@@ -186,7 +256,7 @@ class _HomeContent extends StatelessWidget {
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final patient = recentPatients[index];
+                  final patient = _recentPatients[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Card(
@@ -218,7 +288,7 @@ class _HomeContent extends StatelessWidget {
                     ),
                   );
                 },
-                childCount: recentPatients.length,
+                childCount: _recentPatients.length,
               ),
             ),
           ),

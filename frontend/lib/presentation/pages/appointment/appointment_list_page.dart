@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/appointment_model.dart';
-import '../../../data/repositories/mock_data_repository.dart';
+import '../../../data/repositories/appointment_repository.dart';
+import '../../../di/injection_container.dart';
 import 'appointment_create_page.dart';
 
 class AppointmentListPage extends StatefulWidget {
@@ -12,15 +13,36 @@ class AppointmentListPage extends StatefulWidget {
 
 class _AppointmentListPageState extends State<AppointmentListPage> {
   DateTime _selectedDate = DateTime.now();
-  final _mockRepo = MockDataRepository();
+  final AppointmentRepository _appointmentRepo = sl<AppointmentRepository>();
+  List<AppointmentModel> _appointments = [];
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
+    _loadAppointments();
   }
 
-  List<AppointmentModel> get _appointmentsForSelectedDate {
-    return _mockRepo.getAppointmentsByDate(_selectedDate);
+  Future<void> _loadAppointments() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final appointments =
+          await _appointmentRepo.getAppointmentsByDate(_selectedDate);
+      setState(() {
+        _appointments = appointments;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   Color _getStatusColor(AppointmentStatus status, ColorScheme colorScheme) {
@@ -277,7 +299,7 @@ class _AppointmentListPageState extends State<AppointmentListPage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final appointments = _appointmentsForSelectedDate;
+    final appointments = _appointments;
 
     return Scaffold(
       appBar: AppBar(

@@ -2,33 +2,40 @@
 class ApiConstants {
   ApiConstants._();
 
-  // Base URL - Change this to your server URL
-  static const String baseUrl = 'http://localhost:3000/api';
+  // Supabase Configuration
+  static const String baseUrl = 'https://vnodgfveyntfktrrlbat.supabase.co';
+  static const String supabaseKey =
+      'sb_publishable_8RNFXWCB9p7eFiJJg_5x3w_ZdQ0sIH7';
 
-  // Endpoints
-  static const String auth = '/auth';
-  static const String login = '$auth/login';
-  static const String register = '$auth/register';
-  static const String refresh = '$auth/refresh';
-  static const String me = '$auth/me';
+  // Supabase API endpoints
+  static const String supabaseAuth = '/auth/v1';
+  static const String supabaseRest = '/rest/v1';
 
-  static const String patients = '/patients';
-  static const String patientSearch = '$patients/search';
-  static const String patientRecent = '$patients/recent';
-  static const String patientFrequent = '$patients/frequent';
-  static const String patientIdentify = '/face/identify';
-  static const String patientEnroll = '/face/enroll';
+  // Endpoints - using Supabase REST API
+  static const String login = '$supabaseAuth/token?grant_type=password';
+  static const String register = '$supabaseAuth/signup';
+  static const String refresh = '$supabaseAuth/token?grant_type=refresh_token';
+  static const String logout = '$supabaseAuth/logout';
 
-  static const String appointments = '/appointments';
-  static const String appointmentsToday = '$appointments/today';
-  static const String appointmentsWeek = '$appointments/week';
+  // Table endpoints (Supabase REST)
+  static const String patients = '$supabaseRest/patients';
+  static const String patientSearch = '$supabaseRest/patients';
+  static const String patientRecent = '$supabaseRest/patients';
+  static const String patientFrequent = '$supabaseRest/patients';
+  static const String patientIdentify = '$supabaseRest/patients';
+  static const String patientEnroll = '$supabaseRest/patients';
 
-  static const String dashboard = '/dashboard';
-  static const String dashboardStats = '$dashboard/stats';
-  static const String dashboardRecent = '$dashboard/recent';
+  static const String appointments = '$supabaseRest/appointments';
+  static const String appointmentsToday = '$supabaseRest/appointments';
+  static const String appointmentsWeek = '$supabaseRest/appointments';
 
-  static const String treatments = '/treatments';
-  static const String payments = '/payments';
+  // Note: Dashboard stats need to be computed client-side from patients/appointments
+  static const String dashboardStats = '$supabaseRest/patients';
+  static const String dashboardRecent = '$supabaseRest/patients';
+
+  static const String treatments = '$supabaseRest/treatments';
+  static const String payments = '$supabaseRest/payments';
+  static const String users = '$supabaseRest/users';
 
   // Timeouts
   static const int connectTimeout = 30000;
@@ -39,4 +46,5 @@ class ApiConstants {
   static const String applicationJson = 'application/json';
   static const String authorization = 'Authorization';
   static const String bearer = 'Bearer';
+  static const String apikey = 'apikey';
 }

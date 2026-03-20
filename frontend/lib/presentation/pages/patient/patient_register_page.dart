@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../data/repositories/patient_repository.dart';
+import '../../../di/injection_container.dart';
 
 class PatientRegisterPage extends StatefulWidget {
   const PatientRegisterPage({super.key});
@@ -15,8 +17,16 @@ class _PatientRegisterPageState extends State<PatientRegisterPage> {
   final _ageController = TextEditingController();
   final _occupationController = TextEditingController();
   final _complaintController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _emergencyContactController = TextEditingController();
+  final _emergencyPhoneController = TextEditingController();
+  final _medicalNotesController = TextEditingController();
+  final _allergiesController = TextEditingController();
   String? _selectedStatus;
   String? _selectedGender;
+  bool _isLoading = false;
+
+  final PatientRepository _patientRepo = sl<PatientRepository>();
 
   final List<String> _statusOptions = [
     'Single',
@@ -34,20 +44,79 @@ class _PatientRegisterPageState extends State<PatientRegisterPage> {
     _ageController.dispose();
     _occupationController.dispose();
     _complaintController.dispose();
+    _emailController.dispose();
+    _emergencyContactController.dispose();
+    _emergencyPhoneController.dispose();
+    _medicalNotesController.dispose();
+    _allergiesController.dispose();
     super.dispose();
   }
 
-  void _savePatient() {
+  Future<void> _savePatient() async {
     if (_formKey.currentState!.validate()) {
-      // Save patient logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Patient registered successfully!'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-      );
-      Navigator.pop(context);
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await _patientRepo.createPatient(
+          name: _nameController.text.trim(),
+          address: _addressController.text.trim(),
+          telephone: _phoneController.text.trim(),
+          age: int.tryParse(_ageController.text.trim()) ?? 0,
+          occupation: _occupationController.text.trim().isEmpty
+              ? null
+              : _occupationController.text.trim(),
+          status: _selectedStatus,
+          complaint: _complaintController.text.trim().isEmpty
+              ? null
+              : _complaintController.text.trim(),
+          gender: _selectedGender,
+          email: _emailController.text.trim().isEmpty
+              ? null
+              : _emailController.text.trim(),
+          emergencyContact: _emergencyContactController.text.trim().isEmpty
+              ? null
+              : _emergencyContactController.text.trim(),
+          emergencyPhone: _emergencyPhoneController.text.trim().isEmpty
+              ? null
+              : _emergencyPhoneController.text.trim(),
+          medicalNotes: _medicalNotesController.text.trim().isEmpty
+              ? null
+              : _medicalNotesController.text.trim(),
+          allergies: _allergiesController.text.trim().isEmpty
+              ? null
+              : _allergiesController.text.trim(),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Patient registered successfully!'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
+          Navigator.pop(
+              context, true); // Return true to indicate successful registration
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 

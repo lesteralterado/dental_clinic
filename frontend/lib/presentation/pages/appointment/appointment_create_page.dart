@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/patient_model.dart';
-import '../../../data/repositories/mock_data_repository.dart';
+import '../../../data/repositories/patient_repository.dart';
+import '../../../data/repositories/appointment_repository.dart';
+import '../../../di/injection_container.dart';
 
 class AppointmentCreatePage extends StatefulWidget {
   const AppointmentCreatePage({super.key});
@@ -11,7 +13,8 @@ class AppointmentCreatePage extends StatefulWidget {
 
 class _AppointmentCreatePageState extends State<AppointmentCreatePage> {
   final _formKey = GlobalKey<FormState>();
-  final _mockRepo = MockDataRepository();
+  final PatientRepository _patientRepo = sl<PatientRepository>();
+  final AppointmentRepository _appointmentRepo = sl<AppointmentRepository>();
   final _reasonController = TextEditingController();
   final _notesController = TextEditingController();
 
@@ -19,16 +22,32 @@ class _AppointmentCreatePageState extends State<AppointmentCreatePage> {
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
   int _selectedDuration = 30;
+  List<PatientModel> _patients = [];
+  bool _isLoading = true;
+  bool _isSaving = false;
 
   final List<int> _durationOptions = [15, 30, 45, 60, 90];
 
   @override
   void initState() {
     super.initState();
-    // Set default patient if available
-    final patients = _mockRepo.patients;
-    if (patients.isNotEmpty) {
-      _selectedPatient = patients.first;
+    _loadPatients();
+  }
+
+  Future<void> _loadPatients() async {
+    try {
+      final result = await _patientRepo.getPatients(limit: 100);
+      setState(() {
+        _patients = result.patients;
+        _isLoading = false;
+        if (_patients.isNotEmpty) {
+          _selectedPatient = _patients.first;
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -81,7 +100,7 @@ class _AppointmentCreatePageState extends State<AppointmentCreatePage> {
       final timeString =
           '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
 
-      _mockRepo.createAppointment(
+      _appointmentRepo.createAppointment(
         patientId: _selectedPatient!.id,
         appointmentDate: _selectedDate,
         appointmentTime: timeString,
@@ -106,7 +125,7 @@ class _AppointmentCreatePageState extends State<AppointmentCreatePage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final patients = _mockRepo.patients;
+    final patients = _patients;
 
     return Scaffold(
       appBar: AppBar(

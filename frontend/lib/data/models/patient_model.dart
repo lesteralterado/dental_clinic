@@ -1,9 +1,10 @@
 import 'package:equatable/equatable.dart';
 
-/// Patient data model
+/// Patient data model - compatible with backend API
 class PatientModel extends Equatable {
   final String id;
   final String qrCode;
+  final String? qrCodeData; // Generated QR code image (base64)
   final String name;
   final String address;
   final String telephone;
@@ -26,6 +27,7 @@ class PatientModel extends Equatable {
   const PatientModel({
     required this.id,
     required this.qrCode,
+    this.qrCodeData,
     required this.name,
     required this.address,
     required this.telephone,
@@ -50,29 +52,47 @@ class PatientModel extends Equatable {
   factory PatientModel.fromJson(Map<String, dynamic> json) {
     return PatientModel(
       id: json['id'] as String,
-      qrCode: json['qrCode'] as String,
+      qrCode: json['qrCode'] as String? ?? json['qr_code'] as String? ?? '',
+      qrCodeData:
+          json['qrCodeData'] as String? ?? json['qr_code_data'] as String?,
       name: json['name'] as String,
-      address: json['address'] as String,
-      telephone: json['telephone'] as String,
-      age: json['age'] as int,
+      address: json['address'] as String? ?? '',
+      telephone: json['telephone'] as String? ?? '',
+      age: json['age'] as int? ?? 0,
       occupation: json['occupation'] as String?,
       status: json['status'] as String?,
       complaint: json['complaint'] as String?,
       gender: json['gender'] as String?,
       dateOfBirth: json['dateOfBirth'] != null
           ? DateTime.parse(json['dateOfBirth'] as String)
-          : null,
+          : (json['date_of_birth'] != null
+              ? DateTime.parse(json['date_of_birth'] as String)
+              : null),
       email: json['email'] as String?,
-      emergencyContact: json['emergencyContact'] as String?,
-      emergencyPhone: json['emergencyPhone'] as String?,
-      medicalNotes: json['medicalNotes'] as String?,
+      emergencyContact: json['emergencyContact'] as String? ??
+          json['emergency_contact'] as String?,
+      emergencyPhone: json['emergencyPhone'] as String? ??
+          json['emergency_phone'] as String?,
+      medicalNotes:
+          json['medicalNotes'] as String? ?? json['medical_notes'] as String?,
       allergies: json['allergies'] as String?,
-      isFrequent: json['isFrequent'] as bool? ?? false,
+      isFrequent:
+          json['isFrequent'] as bool? ?? json['is_frequent'] as bool? ?? false,
       lastVisit: json['lastVisit'] != null
           ? DateTime.parse(json['lastVisit'] as String)
-          : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+          : (json['last_visit'] != null
+              ? DateTime.parse(json['last_visit'] as String)
+              : null),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : (json['created_at'] != null
+              ? DateTime.parse(json['created_at'] as String)
+              : DateTime.now()),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : (json['updated_at'] != null
+              ? DateTime.parse(json['updated_at'] as String)
+              : DateTime.now()),
     );
   }
 
@@ -81,6 +101,7 @@ class PatientModel extends Equatable {
     return {
       'id': id,
       'qrCode': qrCode,
+      'qrCodeData': qrCodeData,
       'name': name,
       'address': address,
       'telephone': telephone,
@@ -106,6 +127,7 @@ class PatientModel extends Equatable {
   PatientModel copyWith({
     String? id,
     String? qrCode,
+    String? qrCodeData,
     String? name,
     String? address,
     String? telephone,
@@ -128,6 +150,7 @@ class PatientModel extends Equatable {
     return PatientModel(
       id: id ?? this.id,
       qrCode: qrCode ?? this.qrCode,
+      qrCodeData: qrCodeData ?? this.qrCodeData,
       name: name ?? this.name,
       address: address ?? this.address,
       telephone: telephone ?? this.telephone,
@@ -161,6 +184,7 @@ class PatientModel extends Equatable {
   List<Object?> get props => [
         id,
         qrCode,
+        qrCodeData,
         name,
         address,
         telephone,

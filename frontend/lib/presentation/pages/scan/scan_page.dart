@@ -61,103 +61,105 @@ class _FaceScanTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Camera Placeholder
-            Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: colorScheme.primary.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(
-                    Icons.face,
-                    size: 120,
-                    color: colorScheme.primary.withOpacity(0.5),
+    return SingleChildScrollView(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Camera Placeholder
+              Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: colorScheme.primary.withOpacity(0.3),
+                    width: 2,
                   ),
-                  Positioned(
-                    bottom: 40,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.videocam,
-                            size: 16,
-                            color: colorScheme.onPrimaryContainer,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Ready',
-                            style: TextStyle(
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.face,
+                      size: 120,
+                      color: colorScheme.primary.withOpacity(0.5),
+                    ),
+                    Positioned(
+                      bottom: 40,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.videocam,
+                              size: 16,
                               color: colorScheme.onPrimaryContainer,
-                              fontWeight: FontWeight.w500,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              'Ready',
+                              style: TextStyle(
+                                color: colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-
-            Text(
-              'Face Recognition',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Position face in the camera frame',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 32),
-
-            // Action Buttons
-            FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('Start Scanning'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 40),
 
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.photo_library),
-              label: const Text('Select from Gallery'),
-            ),
-          ],
+              Text(
+                'Face Recognition',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Position face in the camera frame',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 32),
+
+              // Action Buttons
+              FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Start Scanning'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.photo_library),
+                label: const Text('Select from Gallery'),
+              ),
+            ],
+          ),
         ),
       ),
     );

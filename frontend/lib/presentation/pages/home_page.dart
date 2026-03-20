@@ -83,7 +83,7 @@ class _HomeContent extends StatelessWidget {
             surfaceTintColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 60),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -270,7 +270,7 @@ class _ActionButtonGrid extends StatelessWidget {
       crossAxisCount: 2,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.8,
       children: [
         _ActionCard(
           icon: Icons.qr_code_scanner,
@@ -297,14 +297,20 @@ class _ActionButtonGrid extends StatelessWidget {
           label: 'Schedule',
           subtitle: "Today's Appointments",
           color: Theme.of(context).colorScheme.tertiaryContainer,
-          onTap: () {},
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AppointmentListPage()),
+          ),
         ),
         _ActionCard(
           icon: Icons.medical_services,
           label: 'Treatments',
           subtitle: 'View All',
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          onTap: () {},
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PatientListPage()),
+          ),
         ),
       ],
     );

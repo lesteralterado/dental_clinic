@@ -5,6 +5,7 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
+    "start:mock": "node src/mock-server.js",
     "dev": "nodemon src/app.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

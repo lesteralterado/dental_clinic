@@ -2,8 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/network/api_client.dart';
 import '../../../data/models/user_model.dart';
+import '../../../data/repositories/mock_data_repository.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -54,12 +54,10 @@ class AuthError extends AuthState {
 
 // BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final ApiClient _apiClient;
   final FlutterSecureStorage _storage;
 
-  AuthBloc({ApiClient? apiClient, FlutterSecureStorage? storage})
-      : _apiClient = apiClient ?? ApiClient(),
-        _storage = storage ?? const FlutterSecureStorage(),
+  AuthBloc({FlutterSecureStorage? storage})
+      : _storage = storage ?? const FlutterSecureStorage(),
         super(AuthInitial()) {
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<LoginRequested>(_onLoginRequested);
@@ -89,20 +87,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
-      final response = await _apiClient.post(
-        '/auth/login',
-        data: {'email': event.email, 'password': event.password},
+      // Use hardcoded authentication from MockDataRepository
+      final mockRepo = MockDataRepository();
+      final authData = mockRepo.authenticate(event.email, event.password);
+
+      if (authData == null) {
+        emit(const AuthError('Invalid email or password'));
+        return;
+      }
+
+      // Create user from auth data
+      final user = UserModel(
+        id: authData['id'] as String,
+        email: authData['email'] as String,
+        name: authData['name'] as String,
+        role: UserRole.fromString(authData['role'] as String),
+        isActive: authData['isActive'] as bool,
+        createdAt: DateTime.parse(authData['createdAt'] as String),
+        updatedAt: DateTime.parse(authData['updatedAt'] as String),
       );
-      final authResponse = AuthResponse.fromJson(response.data);
+
+      // Save mock tokens
       await _storage.write(
         key: AppConstants.accessToken,
-        value: authResponse.accessToken,
+        value: authData['accessToken'] as String,
       );
       await _storage.write(
         key: AppConstants.refreshToken,
-        value: authResponse.refreshToken,
+        value: authData['refreshToken'] as String,
       );
-      emit(Authenticated(authResponse.user));
+      emit(Authenticated(user));
     } catch (e) {
       emit(AuthError(e.toString()));
     }

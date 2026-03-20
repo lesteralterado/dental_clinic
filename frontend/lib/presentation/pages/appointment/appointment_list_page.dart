@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/appointment_model.dart';
 import '../../../data/repositories/mock_data_repository.dart';
+import 'appointment_create_page.dart';
 
 class AppointmentListPage extends StatefulWidget {
   const AppointmentListPage({super.key});
@@ -187,7 +188,18 @@ class _AppointmentListPageState extends State<AppointmentListPage> {
                         ),
                         const SizedBox(height: 8),
                         FilledButton.tonal(
-                          onPressed: () {},
+                          onPressed: () async {
+                            final result = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      const AppointmentCreatePage()),
+                            );
+                            if (result == true) {
+                              // Refresh the list
+                              setState(() {});
+                            }
+                          },
                           child: const Text('Schedule Appointment'),
                         ),
                       ],
@@ -301,7 +313,16 @@ class _AppointmentListPageState extends State<AppointmentListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () async {
+          final result = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(builder: (_) => const AppointmentCreatePage()),
+          );
+          if (result == true) {
+            // Refresh the list
+            setState(() {});
+          }
+        },
         icon: const Icon(Icons.add),
         label: const Text('New Appointment'),
       ),

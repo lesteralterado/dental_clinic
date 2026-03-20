@@ -260,7 +260,9 @@ class MockDataRepository {
   ];
 
   // Hardcoded appointments
-  List<AppointmentModel> get appointments {
+  late final List<AppointmentModel> _appointmentsList = _initAppointments();
+
+  List<AppointmentModel> _initAppointments() {
     final now = DateTime.now();
     return [
       AppointmentModel(
@@ -426,6 +428,9 @@ class MockDataRepository {
     ];
   }
 
+  // Get appointments (getter for backwards compatibility)
+  List<AppointmentModel> get appointments => _appointmentsList;
+
   // Authenticate user with email and password
   Map<String, dynamic>? authenticate(String email, String password) {
     final user = _users.firstWhere(
@@ -525,6 +530,43 @@ class MockDataRepository {
   // Get appointments by patient ID
   List<AppointmentModel> getAppointmentsByPatientId(String patientId) {
     return appointments.where((a) => a.patientId == patientId).toList();
+  }
+
+  // Create a new appointment
+  AppointmentModel createAppointment({
+    required String patientId,
+    String? dentistId,
+    required DateTime appointmentDate,
+    required String appointmentTime,
+    int duration = 30,
+    String? reason,
+    String? notes,
+  }) {
+    final now = DateTime.now();
+    final newAppointment = AppointmentModel(
+      id: 'apt-${now.millisecondsSinceEpoch}',
+      patientId: patientId,
+      dentistId: dentistId ?? 'user-1',
+      appointmentDate: appointmentDate,
+      appointmentTime: appointmentTime,
+      duration: duration,
+      status: AppointmentStatus.scheduled,
+      reason: reason,
+      notes: notes,
+      isCheckedIn: false,
+      checkedInAt: null,
+      createdAt: now,
+      updatedAt: now,
+      patient: patients.firstWhere(
+        (p) => p.id == patientId,
+        orElse: () => patients.first,
+      ),
+    );
+
+    // Add to the appointments list
+    _appointmentsList.add(newAppointment);
+
+    return newAppointment;
   }
 
   // Get dashboard stats

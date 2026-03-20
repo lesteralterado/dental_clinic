@@ -54,6 +54,226 @@ class _AppointmentListPageState extends State<AppointmentListPage> {
     }
   }
 
+  void _showAppointmentDetails(
+      BuildContext context, AppointmentModel appointment) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Appointment Details',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 24),
+              _buildDetailRow(
+                context,
+                Icons.person,
+                'Patient',
+                appointment.patient?.name ?? 'Unknown Patient',
+              ),
+              _buildDetailRow(
+                context,
+                Icons.calendar_today,
+                'Date',
+                '${appointment.appointmentDate.day}/${appointment.appointmentDate.month}/${appointment.appointmentDate.year}',
+              ),
+              _buildDetailRow(
+                context,
+                Icons.access_time,
+                'Time',
+                appointment.appointmentTime,
+              ),
+              _buildDetailRow(
+                context,
+                Icons.timer,
+                'Duration',
+                '${appointment.duration} minutes',
+              ),
+              _buildDetailRow(
+                context,
+                Icons.medical_services,
+                'Reason',
+                appointment.reason ?? 'Not specified',
+              ),
+              _buildDetailRow(
+                context,
+                Icons.info_outline,
+                'Status',
+                appointment.status.displayName,
+              ),
+              if (appointment.notes != null && appointment.notes!.isNotEmpty)
+                _buildDetailRow(
+                  context,
+                  Icons.notes,
+                  'Notes',
+                  appointment.notes!,
+                ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editAppointment(BuildContext context, AppointmentModel appointment) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Edit Appointment',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Patient: ${appointment.patient?.name ?? 'Unknown'}',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Edit functionality coming soon!',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Save'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -295,12 +515,48 @@ class _AppointmentListPageState extends State<AppointmentListPage> {
                                 ),
 
                                 // Actions
-                                IconButton(
+                                PopupMenuButton<String>(
                                   icon: Icon(
                                     Icons.more_vert,
                                     color: colorScheme.onSurfaceVariant,
                                   ),
-                                  onPressed: () {},
+                                  onSelected: (value) {
+                                    if (value == 'view') {
+                                      _showAppointmentDetails(context, apt);
+                                    } else if (value == 'edit') {
+                                      _editAppointment(context, apt);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem<String>(
+                                      value: 'view',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.visibility,
+                                            size: 20,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Text('View Details'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem<String>(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.edit,
+                                            size: 20,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          const Text('Edit'),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

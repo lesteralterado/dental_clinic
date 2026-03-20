@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../data/repositories/mock_data_repository.dart';
+import 'patient_register_page.dart';
 
 class PatientListPage extends StatefulWidget {
   const PatientListPage({super.key});
@@ -193,7 +194,10 @@ class _PatientListPageState extends State<PatientListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, '/patient/register'),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PatientRegisterPage()),
+        ),
         icon: const Icon(Icons.add),
         label: const Text('Add Patient'),
       ),

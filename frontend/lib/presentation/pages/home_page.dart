@@ -76,7 +76,7 @@ class _HomeContent extends StatelessWidget {
         slivers: [
           // Header AppBar
           SliverAppBar(
-            expandedHeight: 120,
+            expandedHeight: 100,
             floating: false,
             pinned: true,
             backgroundColor: colorScheme.surface,
@@ -268,9 +268,9 @@ class _ActionButtonGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.8,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: 1.5,
       children: [
         _ActionCard(
           icon: Icons.qr_code_scanner,
@@ -343,14 +343,14 @@ class _ActionCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Icon(
                 icon,
-                size: 28,
+                size: 24,
                 color: colorScheme.onSurface,
               ),
               Column(

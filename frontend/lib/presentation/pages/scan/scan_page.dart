@@ -171,93 +171,95 @@ class _QRScanTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // QR Scanner Placeholder
-            Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: colorScheme.primary.withOpacity(0.3),
-                  width: 2,
+    return SingleChildScrollView(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // QR Scanner Placeholder
+              Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: colorScheme.primary.withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.qr_code_scanner,
+                      size: 120,
+                      color: colorScheme.primary.withOpacity(0.5),
+                    ),
+                    // Corner decorations
+                    Positioned(
+                      top: 20,
+                      left: 20,
+                      child: _buildCorner(colorScheme, false),
+                    ),
+                    Positioned(
+                      top: 20,
+                      right: 20,
+                      child: _buildCorner(colorScheme, true),
+                    ),
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      child: _buildCorner(colorScheme, false),
+                    ),
+                    Positioned(
+                      bottom: 20,
+                      right: 20,
+                      child: _buildCorner(colorScheme, true),
+                    ),
+                  ],
                 ),
               ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(
-                    Icons.qr_code_scanner,
-                    size: 120,
-                    color: colorScheme.primary.withOpacity(0.5),
-                  ),
-                  // Corner decorations
-                  Positioned(
-                    top: 20,
-                    left: 20,
-                    child: _buildCorner(colorScheme, false),
-                  ),
-                  Positioned(
-                    top: 20,
-                    right: 20,
-                    child: _buildCorner(colorScheme, true),
-                  ),
-                  Positioned(
-                    bottom: 20,
-                    left: 20,
-                    child: _buildCorner(colorScheme, false),
-                  ),
-                  Positioned(
-                    bottom: 20,
-                    right: 20,
-                    child: _buildCorner(colorScheme, true),
-                  ),
-                ],
+              const SizedBox(height: 40),
+
+              Text(
+                'QR Code Scanner',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
-            ),
-            const SizedBox(height: 40),
+              const SizedBox(height: 8),
+              Text(
+                'Point camera at QR code',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 32),
 
-            Text(
-              'QR Code Scanner',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+              // Action Buttons
+              FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Start Scanning'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
                   ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Point camera at QR code',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 32),
-
-            // Action Buttons
-            FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Start Scanning'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.keyboard),
-              label: const Text('Enter Code Manually'),
-            ),
-          ],
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.keyboard),
+                label: const Text('Enter Code Manually'),
+              ),
+            ],
+          ),
         ),
       ),
     );

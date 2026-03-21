@@ -99,10 +99,10 @@ class _LoginPageState extends State<LoginPage>
                             color: colorScheme.primaryContainer,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(
-                            Icons.local_hospital,
-                            size: 64,
-                            color: colorScheme.onPrimaryContainer,
+                          child: Image.asset(
+                            'assets/images/2.png',
+                            width: 64,
+                            height: 64,
                           ),
                         ),
                         const SizedBox(height: 32),

@@ -2,15 +2,43 @@ import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../models/user_model.dart';
+import 'mock_data_repository.dart';
 
-/// Authentication repository - handles login, logout, and registration using Supabase
+/// Authentication repository - handles login, logout, and registration
+/// Uses mock credentials for predefined users, falls back to Supabase for others
 class AuthRepository {
   final ApiClient _apiClient;
+  final MockDataRepository _mockDataRepository;
 
-  AuthRepository({required ApiClient apiClient}) : _apiClient = apiClient;
+  AuthRepository(
+      {required ApiClient apiClient, MockDataRepository? mockDataRepository})
+      : _apiClient = apiClient,
+        _mockDataRepository = mockDataRepository ?? MockDataRepository();
 
-  /// Login with email and password using Supabase Auth
+  /// Login with email and password
+  /// First checks mock credentials, then falls back to Supabase Auth
   Future<AuthResult> login(String email, String password) async {
+    // First, check against mock credentials
+    final mockUser = _mockDataRepository.authenticate(email, password);
+    if (mockUser != null) {
+      final user = UserModel(
+        id: mockUser['id'] as String,
+        email: mockUser['email'] as String,
+        name: mockUser['name'] as String,
+        role: UserRole.fromString(mockUser['role'] as String),
+        isActive: mockUser['isActive'] as bool,
+        createdAt: DateTime.parse(mockUser['createdAt'] as String),
+        updatedAt: DateTime.parse(mockUser['updatedAt'] as String),
+      );
+
+      // Set mock tokens
+      await _apiClient.setAccessToken(mockUser['accessToken'] as String);
+      await _apiClient.setRefreshToken(mockUser['refreshToken'] as String);
+
+      return AuthResult.success(user);
+    }
+
+    // Fall back to Supabase Auth for non-mock users
     try {
       final response = await _apiClient.post(
         ApiConstants.login,

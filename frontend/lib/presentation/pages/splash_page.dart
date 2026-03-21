@@ -124,10 +124,10 @@ class _SplashPageState extends State<SplashPage>
                         ),
                       ],
                     ),
-                    child: Icon(
-                      Icons.local_hospital,
-                      size: 80,
-                      color: colorScheme.onPrimaryContainer,
+                    child: Image.asset(
+                      'assets/images/2.png',
+                      width: 80,
+                      height: 80,
                     ),
                   ),
                 ),

@@ -102,9 +102,23 @@ class _PatientRegisterPageState extends State<PatientRegisterPage> {
         }
       } catch (e) {
         if (mounted) {
+          String errorMessage = e.toString();
+
+          // Check if it's a session-related error
+          if (errorMessage.toLowerCase().contains('session') ||
+              errorMessage.toLowerCase().contains('login') ||
+              errorMessage.toLowerCase().contains('jwt') ||
+              errorMessage.toLowerCase().contains('cryptography') ||
+              errorMessage.toLowerCase().contains('expired')) {
+            errorMessage = 'Session expired. Please login again.';
+
+            // Show dialog to re-login
+            _showReLoginDialog();
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${e.toString()}'),
+              content: Text(errorMessage),
               behavior: SnackBarBehavior.floating,
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
@@ -118,6 +132,27 @@ class _PatientRegisterPageState extends State<PatientRegisterPage> {
         }
       }
     }
+  }
+
+  void _showReLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Session Expired'),
+        content: const Text(
+            'Your session has expired. Please login again to continue.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).popUntil((route) => route.isFirst);
+              Navigator.of(context).pushNamed('/login');
+            },
+            child: const Text('Login'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

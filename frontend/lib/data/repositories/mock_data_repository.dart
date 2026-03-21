@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/user_model.dart';
 import '../models/patient_model.dart';
 import '../models/appointment_model.dart';
@@ -9,6 +11,57 @@ class MockDataRepository {
   static final MockDataRepository _instance = MockDataRepository._internal();
   factory MockDataRepository() => _instance;
   MockDataRepository._internal();
+
+  /// Check if a token is a mock token by decoding the JWT payload
+  bool isMockToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+
+      // Decode the payload (second part)
+      final payloadJson = utf8.decode(base64Url.decode(parts[1]));
+      final payload = json.decode(payloadJson) as Map<String, dynamic>;
+
+      // Check for isMock claim
+      return payload['isMock'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Generate a valid JWT token for mock users
+  /// JWT format: header.payload.signature (base64url encoded)
+  String _generateMockJwt(String userId, String role) {
+    // Header
+    final header = {
+      'alg': 'HS256',
+      'typ': 'JWT',
+    };
+
+    // Payload with claims
+    final now = DateTime.now();
+    final payload = {
+      'sub': userId,
+      'email': _users.firstWhere((u) => u['id'] == userId,
+              orElse: () => {})['email'] ??
+          '',
+      'role': role,
+      'iat': now.millisecondsSinceEpoch ~/ 1000,
+      'exp': now.add(const Duration(days: 7)).millisecondsSinceEpoch ~/ 1000,
+      // Custom claim to identify mock tokens
+      'isMock': true,
+    };
+
+    // Encode header and payload to base64url
+    final headerEncoded = base64Url.encode(utf8.encode(json.encode(header)));
+    final payloadEncoded = base64Url.encode(utf8.encode(json.encode(payload)));
+
+    // Create a mock signature (in real JWT this would be signed)
+    final signatureInput = '$headerEncoded.$payloadEncoded.mock_secret_key';
+    final signatureEncoded = base64Url.encode(utf8.encode(signatureInput));
+
+    return '$headerEncoded.$payloadEncoded.$signatureEncoded';
+  }
 
   // Hardcoded users for login
   // Email: admin@dental.com, Password: admin123
@@ -442,17 +495,23 @@ class MockDataRepository {
       return null;
     }
 
+    // Generate valid JWT tokens
+    final userId = user['id'] as String;
+    final role = user['role'] as String;
+    final accessToken = _generateMockJwt(userId, role);
+    final refreshToken = _generateMockJwt(userId, role);
+
     // Return user data without password
     return {
-      'id': user['id'],
+      'id': userId,
       'email': user['email'],
       'name': user['name'],
-      'role': user['role'],
+      'role': role,
       'isActive': user['isActive'],
       'createdAt': user['createdAt'],
       'updatedAt': user['updatedAt'],
-      'accessToken': 'mock-access-token-${user['id']}',
-      'refreshToken': 'mock-refresh-token-${user['id']}',
+      'accessToken': accessToken,
+      'refreshToken': refreshToken,
     };
   }
 

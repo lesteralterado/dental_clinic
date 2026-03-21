@@ -10,7 +10,12 @@ class ApiClient {
   bool _isRefreshing = false;
 
   ApiClient({FlutterSecureStorage? secureStorage})
-      : _secureStorage = secureStorage ?? const FlutterSecureStorage() {
+      : _secureStorage = secureStorage ??
+            const FlutterSecureStorage(
+              aOptions: AndroidOptions(
+                encryptedSharedPreferences: true,
+              ),
+            ) {
     _dio = Dio(
       BaseOptions(
         baseUrl: ApiConstants.baseUrl,
@@ -29,6 +34,14 @@ class ApiClient {
 
   Dio get dio => _dio;
 
+  /// Validate JWT token format
+  bool _isValidTokenFormat(String token) {
+    if (token.isEmpty) return false;
+    final parts = token.split('.');
+    // JWT should have 3 parts: header.payload.signature
+    return parts.length == 3;
+  }
+
   void _setupInterceptors() {
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -36,16 +49,45 @@ class ApiClient {
           // Add Supabase API key header for all requests
           options.headers[ApiConstants.apikey] = ApiConstants.supabaseKey;
 
-          // Add authorization header if token exists
-          final token =
-              await _secureStorage.read(key: AppConstants.accessToken);
-          if (token != null && token.isNotEmpty) {
-            options.headers[ApiConstants.authorization] =
-                '${ApiConstants.bearer} $token';
+          // Add authorization header if token exists and is valid
+          try {
+            final token =
+                await _secureStorage.read(key: AppConstants.accessToken);
+            if (token != null &&
+                token.isNotEmpty &&
+                _isValidTokenFormat(token)) {
+              options.headers[ApiConstants.authorization] =
+                  '${ApiConstants.bearer} $token';
+            }
+          } catch (e) {
+            // If reading token fails, clear it and continue without auth
+            await clearTokens();
           }
           return handler.next(options);
         },
         onError: (error, handler) async {
+          // Handle JWT-related errors specifically
+          final errorMessage = error.response?.data?['msg'] ??
+              error.response?.data?['error_description'] ??
+              error.response?.data?['error'] ??
+              error.message;
+
+          // Check for JWT cryptography errors
+          if (errorMessage != null &&
+              (errorMessage.toString().contains('JWT') ||
+                  errorMessage.toString().contains('cryptography'))) {
+            // Clear invalid tokens
+            await clearTokens();
+            // Create a more user-friendly error
+            final customError = DioException(
+              requestOptions: error.requestOptions,
+              error: 'Session expired. Please login again.',
+              type: error.type,
+              response: error.response,
+            );
+            return handler.next(customError);
+          }
+
           // Handle 401 errors - try to refresh token
           if (error.response?.statusCode == 401 && !_isRefreshing) {
             _isRefreshing = true;
@@ -56,17 +98,18 @@ class ApiClient {
                 final opts = error.requestOptions;
                 final token =
                     await _secureStorage.read(key: AppConstants.accessToken);
-                opts.headers[ApiConstants.authorization] =
-                    '${ApiConstants.bearer} $token';
-                final response = await _dio.fetch(opts);
-                _isRefreshing = false;
-                return handler.resolve(response);
+                if (token != null && _isValidTokenFormat(token)) {
+                  opts.headers[ApiConstants.authorization] =
+                      '${ApiConstants.bearer} $token';
+                  final response = await _dio.fetch(opts);
+                  _isRefreshing = false;
+                  return handler.resolve(response);
+                }
               }
             } catch (e) {
               _isRefreshing = false;
               // Clear tokens on refresh failure
-              await _secureStorage.delete(key: AppConstants.accessToken);
-              await _secureStorage.delete(key: AppConstants.refreshToken);
+              await clearTokens();
             }
           }
           return handler.next(error);

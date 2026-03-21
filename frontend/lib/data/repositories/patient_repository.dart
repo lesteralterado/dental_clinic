@@ -2,12 +2,21 @@ import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../models/patient_model.dart';
+import 'mock_data_repository.dart';
 
 /// Patient repository - handles patient CRUD operations via Supabase
 class PatientRepository {
   final ApiClient _apiClient;
+  final MockDataRepository _mockDataRepo = MockDataRepository();
 
   PatientRepository({required ApiClient apiClient}) : _apiClient = apiClient;
+
+  /// Check if running in mock mode
+  Future<bool> _isMockMode() async {
+    final token = await _apiClient.getAccessToken();
+    if (token == null) return false;
+    return _mockDataRepo.isMockToken(token);
+  }
 
   /// Get all patients with optional pagination and search
   Future<PaginatedPatients> getPatients({
@@ -15,6 +24,11 @@ class PatientRepository {
     int limit = 20,
     String? search,
   }) async {
+    // Check if in mock mode - return mock patients
+    if (await _isMockMode()) {
+      return _getMockPatients(page, limit, search);
+    }
+
     try {
       final queryParams = <String, dynamic>{
         'select': '*',
@@ -50,8 +64,45 @@ class PatientRepository {
     }
   }
 
+  /// Get mock patients with pagination
+  PaginatedPatients _getMockPatients(int page, int limit, String? search) {
+    var patients = _mockDataRepo.getAllPatients();
+
+    if (search != null && search.isNotEmpty) {
+      final lowerSearch = search.toLowerCase();
+      patients = patients
+          .where((p) =>
+              p.name.toLowerCase().contains(lowerSearch) ||
+              p.telephone.contains(search))
+          .toList();
+    }
+
+    // Sort by created date descending
+    patients.sort((a, b) => (b.createdAt).compareTo(a.createdAt));
+
+    final total = patients.length;
+    final startIndex = (page - 1) * limit;
+    final endIndex = startIndex + limit;
+    final paginatedPatients = patients.length > startIndex
+        ? patients.sublist(
+            startIndex, endIndex > patients.length ? patients.length : endIndex)
+        : <PatientModel>[];
+
+    return PaginatedPatients(
+      patients: paginatedPatients,
+      total: total,
+      page: page,
+      totalPages: (total / limit).ceil(),
+    );
+  }
+
   /// Search patients by name or telephone
   Future<List<PatientModel>> searchPatients(String query) async {
+    // Check if in mock mode - return mock search results
+    if (await _isMockMode()) {
+      return _mockDataRepo.searchPatients(query);
+    }
+
     try {
       final response = await _apiClient.get(
         ApiConstants.patientSearch,
@@ -74,6 +125,14 @@ class PatientRepository {
 
   /// Get recent patients
   Future<List<PatientModel>> getRecentPatients({int limit = 5}) async {
+    // Check if in mock mode - return mock patients
+    if (await _isMockMode()) {
+      final patients = _mockDataRepo.getAllPatients();
+      patients.sort((a, b) =>
+          (b.updatedAt ?? b.createdAt).compareTo(a.updatedAt ?? a.createdAt));
+      return patients.take(limit).toList();
+    }
+
     try {
       final response = await _apiClient.get(
         ApiConstants.patientRecent,
@@ -96,6 +155,11 @@ class PatientRepository {
 
   /// Get frequent patients
   Future<List<PatientModel>> getFrequentPatients() async {
+    // Check if in mock mode - return mock patients
+    if (await _isMockMode()) {
+      return _mockDataRepo.getFrequentPatients();
+    }
+
     try {
       final response = await _apiClient.get(
         ApiConstants.patientFrequent,
@@ -118,6 +182,11 @@ class PatientRepository {
 
   /// Get patient by ID
   Future<PatientModel?> getPatientById(String id) async {
+    // Check if in mock mode - return mock patient
+    if (await _isMockMode()) {
+      return _mockDataRepo.getPatientById(id);
+    }
+
     try {
       final response = await _apiClient.get(
         '${ApiConstants.patients}?id=eq.$id',
@@ -238,9 +307,37 @@ class PatientRepository {
   }
 
   String _handleError(DioException e) {
-    return e.response?.data?['message'] ??
-        e.response?.data?['error'] ??
-        'An error occurred';
+    // Handle specific Supabase error messages
+    final errorData = e.response?.data;
+
+    if (errorData != null) {
+      // Check for JWT-related errors
+      final errorMsg =
+          errorData['msg'] ?? errorData['message'] ?? errorData['error'] ?? '';
+      if (errorMsg.toString().contains('JWT') ||
+          errorMsg.toString().contains('cryptography')) {
+        return 'Session expired. Please login again.';
+      }
+      if (errorMsg.toString().contains('refresh_token') ||
+          errorMsg.toString().contains('invalid_grant')) {
+        return 'Session expired. Please login again.';
+      }
+
+      return errorMsg.toString();
+    }
+
+    // Handle Dio-specific errors
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      return 'Connection timeout. Please check your internet connection.';
+    }
+
+    if (e.type == DioExceptionType.connectionError) {
+      return 'No internet connection. Please check your network.';
+    }
+
+    return 'An error occurred. Please try again.';
   }
 }
 

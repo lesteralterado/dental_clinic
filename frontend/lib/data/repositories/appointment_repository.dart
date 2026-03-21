@@ -2,13 +2,22 @@ import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../models/appointment_model.dart';
+import 'mock_data_repository.dart';
 
 /// Appointment repository - handles appointment CRUD operations via API
 class AppointmentRepository {
   final ApiClient _apiClient;
+  final MockDataRepository _mockDataRepo = MockDataRepository();
 
   AppointmentRepository({required ApiClient apiClient})
       : _apiClient = apiClient;
+
+  /// Check if running in mock mode
+  Future<bool> _isMockMode() async {
+    final token = await _apiClient.getAccessToken();
+    if (token == null) return false;
+    return _mockDataRepo.isMockToken(token);
+  }
 
   /// Get all appointments with optional filters
   Future<List<AppointmentModel>> getAppointments({
@@ -16,6 +25,11 @@ class AppointmentRepository {
     String? dentistId,
     String? status,
   }) async {
+    // Check if in mock mode - return mock appointments
+    if (await _isMockMode()) {
+      return _getMockAppointments(date, dentistId, status);
+    }
+
     try {
       final queryParams = <String, dynamic>{};
       if (date != null) queryParams['date'] = date;
@@ -40,6 +54,11 @@ class AppointmentRepository {
 
   /// Get today's appointments
   Future<List<AppointmentModel>> getTodayAppointments() async {
+    // Check if in mock mode - return mock appointments
+    if (await _isMockMode()) {
+      return _mockDataRepo.getTodayAppointments();
+    }
+
     try {
       final response = await _apiClient.get(ApiConstants.appointmentsToday);
 
@@ -57,6 +76,11 @@ class AppointmentRepository {
   /// Get weekly appointments
   Future<List<AppointmentModel>> getWeekAppointments(
       {String? startDate}) async {
+    // Check if in mock mode - return mock appointments
+    if (await _isMockMode()) {
+      return _mockDataRepo.getAllAppointments();
+    }
+
     try {
       final queryParams = <String, dynamic>{};
       if (startDate != null) queryParams['start'] = startDate;
@@ -86,6 +110,15 @@ class AppointmentRepository {
 
   /// Get appointment by ID
   Future<AppointmentModel?> getAppointmentById(String id) async {
+    // Check if in mock mode - return mock appointment
+    if (await _isMockMode()) {
+      try {
+        return _mockDataRepo.getAllAppointments().firstWhere((a) => a.id == id);
+      } catch (e) {
+        return null;
+      }
+    }
+
     try {
       final response = await _apiClient.get('${ApiConstants.appointments}/$id');
 
@@ -101,6 +134,11 @@ class AppointmentRepository {
   /// Get appointments by patient ID
   Future<List<AppointmentModel>> getAppointmentsByPatientId(
       String patientId) async {
+    // Check if in mock mode - return mock appointments
+    if (await _isMockMode()) {
+      return _mockDataRepo.getAppointmentsByPatientId(patientId);
+    }
+
     try {
       final response = await _apiClient.get(
         ApiConstants.appointments,
@@ -198,5 +236,33 @@ class AppointmentRepository {
 
   String _handleError(DioException e) {
     return e.response?.data['message'] ?? 'An error occurred';
+  }
+
+  /// Get mock appointments with optional filters
+  List<AppointmentModel> _getMockAppointments(
+      String? date, String? dentistId, String? status) {
+    var appointments = _mockDataRepo.getAllAppointments();
+
+    if (date != null) {
+      final targetDate = DateTime.parse(date);
+      appointments = appointments
+          .where((a) =>
+              a.appointmentDate.year == targetDate.year &&
+              a.appointmentDate.month == targetDate.month &&
+              a.appointmentDate.day == targetDate.day)
+          .toList();
+    }
+
+    if (dentistId != null) {
+      appointments =
+          appointments.where((a) => a.dentistId == dentistId).toList();
+    }
+
+    if (status != null) {
+      final statusEnum = AppointmentStatus.fromString(status);
+      appointments = appointments.where((a) => a.status == statusEnum).toList();
+    }
+
+    return appointments;
   }
 }

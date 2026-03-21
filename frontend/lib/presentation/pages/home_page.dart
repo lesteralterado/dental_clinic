@@ -77,7 +77,7 @@ class _HomeContentState extends State<_HomeContent> {
   final AppointmentRepository _appointmentRepo = sl<AppointmentRepository>();
 
   DashboardStats? _stats;
-  List<dynamic> _recentPatients = [];
+  List<PatientModel> _recentPatients = [];
   List<dynamic> _todayAppointments = [];
   bool _isLoading = true;
   String? _error;
@@ -103,7 +103,7 @@ class _HomeContentState extends State<_HomeContent> {
 
       setState(() {
         _stats = results[0] as DashboardStats;
-        _recentPatients = results[1] as List<dynamic>;
+        _recentPatients = (results[1] as List<dynamic>).cast<PatientModel>();
         _todayAppointments = results[2] as List<dynamic>;
         _isLoading = false;
       });
@@ -240,7 +240,14 @@ class _HomeContentState extends State<_HomeContent> {
                           ),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PatientListPage(),
+                          ),
+                        );
+                      },
                       child: const Text('See All'),
                     ),
                   ],
@@ -283,7 +290,7 @@ class _HomeContentState extends State<_HomeContent> {
                           Icons.chevron_right,
                           color: colorScheme.onSurfaceVariant,
                         ),
-                        onTap: () {},
+                        onTap: () => _showPatientDetails(context, patient),
                       ),
                     ),
                   );
@@ -294,6 +301,186 @@ class _HomeContentState extends State<_HomeContent> {
           ),
 
           const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+        ],
+      ),
+    );
+  }
+
+  void _showPatientDetails(BuildContext context, PatientModel patient) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Patient Details',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 24),
+              _buildDetailRow(
+                context,
+                Icons.person,
+                'Name',
+                patient.name,
+              ),
+              _buildDetailRow(
+                context,
+                Icons.cake,
+                'Age / Gender',
+                '${patient.age} ${patient.gender != null ? '• ${patient.gender}' : ''}',
+              ),
+              _buildDetailRow(
+                context,
+                Icons.phone,
+                'Telephone',
+                patient.telephone,
+              ),
+              _buildDetailRow(
+                context,
+                Icons.location_on,
+                'Address',
+                patient.address,
+              ),
+              if (patient.email != null && patient.email!.isNotEmpty)
+                _buildDetailRow(
+                  context,
+                  Icons.email,
+                  'Email',
+                  patient.email!,
+                ),
+              if (patient.occupation != null && patient.occupation!.isNotEmpty)
+                _buildDetailRow(
+                  context,
+                  Icons.work,
+                  'Occupation',
+                  patient.occupation!,
+                ),
+              if (patient.status != null && patient.status!.isNotEmpty)
+                _buildDetailRow(
+                  context,
+                  Icons.medical_information,
+                  'Status',
+                  patient.status!,
+                ),
+              if (patient.complaint != null && patient.complaint!.isNotEmpty)
+                _buildDetailRow(
+                  context,
+                  Icons.description,
+                  'Complaint',
+                  patient.complaint!,
+                ),
+              if (patient.allergies != null && patient.allergies!.isNotEmpty)
+                _buildDetailRow(
+                  context,
+                  Icons.warning_amber,
+                  'Allergies',
+                  patient.allergies!,
+                ),
+              if (patient.emergencyContact != null &&
+                  patient.emergencyContact!.isNotEmpty)
+                _buildDetailRow(
+                  context,
+                  Icons.emergency,
+                  'Emergency Contact',
+                  '${patient.emergencyContact} ${patient.emergencyPhone != null ? '(${patient.emergencyPhone})' : ''}',
+                ),
+              if (patient.lastVisit != null)
+                _buildDetailRow(
+                  context,
+                  Icons.calendar_today,
+                  'Last Visit',
+                  _formatDate(patient.lastVisit!),
+                ),
+              if (patient.isFrequent)
+                _buildDetailRow(
+                  context,
+                  Icons.star,
+                  'Frequent Patient',
+                  'Yes',
+                ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

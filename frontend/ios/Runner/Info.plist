@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires camera access for face recognition and QR code scanning</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires photo library access to select images for face recognition</string>
 </dict>
 </plist>

@@ -107,7 +107,8 @@ class PatientRepository {
       final response = await _apiClient.get(
         ApiConstants.patientSearch,
         queryParameters: {
-          'or': '(name.ilike.*$query*,telephone.ilike.*$query*)',
+          'or':
+              '(name.ilike.*$query*,telephone.ilike.*$query*,qr_code.ilike.*$query*)',
           'limit': 10,
         },
       );
@@ -118,6 +119,32 @@ class PatientRepository {
             .toList();
       }
       return [];
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Get patient by QR code
+  Future<PatientModel?> getPatientByQrCode(String qrCode) async {
+    // Check if in mock mode - return mock patient
+    if (await _isMockMode()) {
+      final patients = _mockDataRepo.getAllPatients();
+      try {
+        return patients.firstWhere((p) => p.qrCode == qrCode);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    try {
+      final response = await _apiClient.get(
+        '${ApiConstants.patients}?qr_code=eq.$qrCode',
+      );
+
+      if (response.statusCode == 200 && (response.data as List).isNotEmpty) {
+        return _parsePatientFromSupabase(response.data[0]);
+      }
+      return null;
     } on DioException catch (e) {
       throw _handleError(e);
     }

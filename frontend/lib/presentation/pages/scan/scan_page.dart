@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart' as camera;
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
@@ -8,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../di/injection_container.dart';
 import '../../../data/repositories/patient_repository.dart';
 import '../../../data/models/patient_model.dart';
+import '../../../core/services/face_recognition_service.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -79,6 +82,9 @@ class _FaceScanTabState extends State<_FaceScanTab> {
       enableClassification: true,
     ),
   );
+  final PatientRepository _patientRepository = sl<PatientRepository>();
+  final FaceRecognitionService _faceService = sl<FaceRecognitionService>();
+  bool _isSearching = false;
   bool _isCameraInitialized = false;
 
   @override
@@ -231,21 +237,193 @@ class _FaceScanTabState extends State<_FaceScanTab> {
   }
 
   void _showFaceDetectedDialog(Face face) {
+    if (_isSearching) return;
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    // Extract face template and search for patient
+    _searchPatientByFace(face);
+  }
+
+  /// Extract face template and search for matching patient
+  Future<void> _searchPatientByFace(Face face) async {
+    try {
+      // Extract face template from detected face
+      final template = _extractFaceTemplate(face);
+
+      if (template == null) {
+        _showFaceDetectionError('Could not extract face features');
+        return;
+      }
+
+      setState(() {
+        _statusMessage = 'Searching for patient...';
+      });
+
+      // Search for patient using face template
+      final patient = await _patientRepository.getPatientByFaceTemplate(template);
+
+      if (patient != null) {
+        if (mounted) {
+          _showPatientFoundDialog(patient);
+        }
+      } else {
+        if (mounted) {
+          _showNoMatchDialog();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showFaceDetectionError('Error searching patient: ${e.toString()}');
+      }
+    } finally {
+      setState(() {
+        _isSearching = false;
+        _statusMessage = 'Ready';
+      });
+    }
+  }
+
+  /// Extract face template from detected face
+  String? _extractFaceTemplate(Face face) {
+    try {
+      final List<double> template = [];
+      final box = face.boundingBox;
+      
+      template.add(box.width / 500);
+      template.add(box.height / 500);
+      
+      final faceWidth = box.width;
+      final faceHeight = box.height;
+      final faceCenterX = box.left + faceWidth / 2;
+      final faceCenterY = box.top + faceHeight / 2;
+
+      // Add landmark positions
+      if (face.landmarks[FaceLandmarkType.leftEye] != null) {
+        final leftEye = face.landmarks[FaceLandmarkType.leftEye]!.position;
+        template.add((leftEye.x - faceCenterX) / faceWidth);
+        template.add((leftEye.y - faceCenterY) / faceHeight);
+      } else {
+        template.add(0); template.add(0);
+      }
+
+      if (face.landmarks[FaceLandmarkType.rightEye] != null) {
+        final rightEye = face.landmarks[FaceLandmarkType.rightEye]!.position;
+        template.add((rightEye.x - faceCenterX) / faceWidth);
+        template.add((rightEye.y - faceCenterY) / faceHeight);
+      } else {
+        template.add(0); template.add(0);
+      }
+
+      if (face.landmarks[FaceLandmarkType.noseBase] != null) {
+        final nose = face.landmarks[FaceLandmarkType.noseBase]!.position;
+        template.add((nose.x - faceCenterX) / faceWidth);
+        template.add((nose.y - faceCenterY) / faceHeight);
+      } else {
+        template.add(0); template.add(0);
+      }
+
+      if (face.landmarks[FaceLandmarkType.leftMouth] != null) {
+        final leftMouth = face.landmarks[FaceLandmarkType.leftMouth]!.position;
+        template.add((leftMouth.x - faceCenterX) / faceWidth);
+        template.add((leftMouth.y - faceCenterY) / faceHeight);
+      } else {
+        template.add(0); template.add(0);
+      }
+
+      if (face.landmarks[FaceLandmarkType.rightMouth] != null) {
+        final rightMouth = face.landmarks[FaceLandmarkType.rightMouth]!.position;
+        template.add((rightMouth.x - faceCenterX) / faceWidth);
+        template.add((rightMouth.y - faceCenterY) / faceHeight);
+      } else {
+        template.add(0); template.add(0);
+      }
+
+      template.add(face.headEulerAngleX ?? 0);
+      template.add(face.headEulerAngleY ?? 0);
+      template.add(face.headEulerAngleZ ?? 0);
+
+      // Pad to consistent size
+      while (template.length < 32) {
+        template.add(0);
+      }
+
+      return jsonEncode({'embedding': template});
+    } catch (e) {
+      return null;
+    }
+  }
+
+  void _showPatientFoundDialog(PatientModel patient) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Face Detected'),
+        title: const Text('Patient Found!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.face, size: 64, color: Colors.green),
+            const Icon(Icons.check_circle, size: 64, color: Colors.green),
             const SizedBox(height: 16),
             Text(
-              'Face bounding box: ${face.boundingBox.width.toInt()} x ${face.boundingBox.height.toInt()}',
+              patient.name,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Note: Full face recognition requires face templates to be stored. Would you like to search for a patient by name instead?',
+            Text('QR Code: ${patient.qrCode}'),
+            const SizedBox(height: 4),
+            Text('Phone: ${patient.telephone}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNoMatchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('No Match Found'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.person_off, size: 64, color: Colors.orange),
+            SizedBox(height: 16),
+            Text(
+              'No patient found with matching face. Please register the patient or try QR code scan.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFaceDetectionError(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              message,
               textAlign: TextAlign.center,
             ),
           ],

@@ -515,6 +515,32 @@ class MockDataRepository {
     };
   }
 
+  // Get mock user by ID
+  Map<String, dynamic>? getUserById(String userId) {
+    try {
+      return Map<String, dynamic>.from(
+        _users.firstWhere((u) => u['id'] == userId),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Update mock user name
+  bool updateUserName(String userId, String newName) {
+    try {
+      final index = _users.indexWhere((u) => u['id'] == userId);
+      if (index != -1) {
+        _users[index]['name'] = newName;
+        _users[index]['updatedAt'] = DateTime.now().toIso8601String();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // Get all patients
   List<PatientModel> getAllPatients() {
     return patients;

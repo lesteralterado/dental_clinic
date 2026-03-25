@@ -2,6 +2,10 @@
 class ApiConstants {
   ApiConstants._();
 
+  // Backend Express API (for email, QR code features)
+  // TODO: Update this to your deployed backend URL after deployment
+  static const String backendBaseUrl = 'https://your-app.onrender.com';
+
   // Supabase Configuration
   static const String baseUrl = 'https://vnodgfveyntfktrrlbat.supabase.co';
   static const String supabaseKey =
@@ -36,6 +40,8 @@ class ApiConstants {
   static const String treatments = '$supabaseRest/treatments';
   static const String payments = '$supabaseRest/payments';
   static const String users = '$supabaseRest/users';
+  static const String userUpdate = '$supabaseAuth/user';
+  static const String userProfile = '$supabaseAuth/v1/user';
 
   // Timeouts
   static const int connectTimeout = 30000;

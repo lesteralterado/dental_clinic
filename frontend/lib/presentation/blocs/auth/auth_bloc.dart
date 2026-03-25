@@ -25,6 +25,27 @@ class LoginRequested extends AuthEvent {
 
 class LogoutRequested extends AuthEvent {}
 
+class UpdateUserProfile extends AuthEvent {
+  final String userId;
+  final String name;
+  const UpdateUserProfile({required this.userId, required this.name});
+
+  @override
+  List<Object?> get props => [userId, name];
+}
+
+class ChangePassword extends AuthEvent {
+  final String currentPassword;
+  final String newPassword;
+  const ChangePassword({
+    required this.currentPassword,
+    required this.newPassword,
+  });
+
+  @override
+  List<Object?> get props => [currentPassword, newPassword];
+}
+
 // States
 abstract class AuthState extends Equatable {
   const AuthState();
@@ -66,6 +87,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
+    on<UpdateUserProfile>(_onUpdateUserProfile);
+    on<ChangePassword>(_onChangePassword);
   }
 
   Future<void> _onCheckAuthStatus(
@@ -118,5 +141,70 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     await _authRepository.logout();
     emit(Unauthenticated());
+  }
+
+  Future<void> _onUpdateUserProfile(
+    UpdateUserProfile event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final result = await _authRepository.updateUser(
+        userId: event.userId,
+        name: event.name,
+      );
+
+      if (result.isSuccess && result.user != null) {
+        emit(Authenticated(result.user!));
+      } else {
+        emit(AuthError(result.errorMessage ?? 'Failed to update profile'));
+        // Restore the original user state
+        final currentState = state;
+        if (currentState is Authenticated) {
+          emit(Authenticated(currentState.user));
+        }
+      }
+    } catch (e) {
+      emit(AuthError(e.toString()));
+      final currentState = state;
+      if (currentState is Authenticated) {
+        emit(Authenticated(currentState.user));
+      }
+    }
+  }
+
+  Future<void> _onChangePassword(
+    ChangePassword event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final result = await _authRepository.changePassword(
+        currentPassword: event.currentPassword,
+        newPassword: event.newPassword,
+      );
+
+      if (result.isSuccess) {
+        // Keep the current user state but emit success
+        final currentState = state;
+        if (currentState is Authenticated) {
+          emit(Authenticated(currentState.user));
+        } else {
+          emit(Unauthenticated());
+        }
+      } else {
+        emit(AuthError(result.errorMessage ?? 'Failed to change password'));
+        final currentState = state;
+        if (currentState is Authenticated) {
+          emit(Authenticated(currentState.user));
+        }
+      }
+    } catch (e) {
+      emit(AuthError(e.toString()));
+      final currentState = state;
+      if (currentState is Authenticated) {
+        emit(Authenticated(currentState.user));
+      }
+    }
   }
 }

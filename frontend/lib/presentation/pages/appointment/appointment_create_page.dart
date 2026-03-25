@@ -84,7 +84,7 @@ class _AppointmentCreatePageState extends State<AppointmentCreatePage> {
     }
   }
 
-  void _saveAppointment() {
+  void _saveAppointment() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedPatient == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -97,28 +97,47 @@ class _AppointmentCreatePageState extends State<AppointmentCreatePage> {
         return;
       }
 
-      final timeString =
-          '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
+      setState(() {
+        _isSaving = true;
+      });
 
-      _appointmentRepo.createAppointment(
-        patientId: _selectedPatient!.id,
-        appointmentDate: _selectedDate,
-        appointmentTime: timeString,
-        duration: _selectedDuration,
-        reason:
-            _reasonController.text.isNotEmpty ? _reasonController.text : null,
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-      );
+      try {
+        final timeString =
+            '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Appointment created successfully!'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-      );
-      Navigator.pop(
-          context, true); // Return true to indicate appointment was created
+        await _appointmentRepo.createAppointment(
+          patientId: _selectedPatient!.id,
+          appointmentDate: _selectedDate,
+          appointmentTime: timeString,
+          duration: _selectedDuration,
+          reason:
+              _reasonController.text.isNotEmpty ? _reasonController.text : null,
+          notes:
+              _notesController.text.isNotEmpty ? _notesController.text : null,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Appointment created successfully!'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+        Navigator.pop(
+            context, true); // Return true to indicate appointment was created
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create appointment: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      } finally {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -273,9 +292,15 @@ class _AppointmentCreatePageState extends State<AppointmentCreatePage> {
 
             // Create Button
             FilledButton.icon(
-              onPressed: _saveAppointment,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Appointment'),
+              onPressed: _isSaving ? null : _saveAppointment,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add),
+              label: Text(_isSaving ? 'Creating...' : 'Create Appointment'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),

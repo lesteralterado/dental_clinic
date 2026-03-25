@@ -5,6 +5,8 @@ class PatientModel extends Equatable {
   final String id;
   final String qrCode;
   final String? qrCodeData; // Generated QR code image (base64)
+  final String?
+      faceTemplate; // Face recognition template (JSON string of embeddings)
   final String name;
   final String address;
   final String telephone;
@@ -28,6 +30,7 @@ class PatientModel extends Equatable {
     required this.id,
     required this.qrCode,
     this.qrCodeData,
+    this.faceTemplate,
     required this.name,
     required this.address,
     required this.telephone,
@@ -55,6 +58,8 @@ class PatientModel extends Equatable {
       qrCode: json['qrCode'] as String? ?? json['qr_code'] as String? ?? '',
       qrCodeData:
           json['qrCodeData'] as String? ?? json['qr_code_data'] as String?,
+      faceTemplate:
+          json['faceTemplate'] as String? ?? json['face_template'] as String?,
       name: json['name'] as String,
       address: json['address'] as String? ?? '',
       telephone: json['telephone'] as String? ?? '',
@@ -102,6 +107,7 @@ class PatientModel extends Equatable {
       'id': id,
       'qrCode': qrCode,
       'qrCodeData': qrCodeData,
+      'faceTemplate': faceTemplate,
       'name': name,
       'address': address,
       'telephone': telephone,
@@ -128,6 +134,7 @@ class PatientModel extends Equatable {
     String? id,
     String? qrCode,
     String? qrCodeData,
+    String? faceTemplate,
     String? name,
     String? address,
     String? telephone,
@@ -151,6 +158,7 @@ class PatientModel extends Equatable {
       id: id ?? this.id,
       qrCode: qrCode ?? this.qrCode,
       qrCodeData: qrCodeData ?? this.qrCodeData,
+      faceTemplate: faceTemplate ?? this.faceTemplate,
       name: name ?? this.name,
       address: address ?? this.address,
       telephone: telephone ?? this.telephone,
@@ -185,6 +193,7 @@ class PatientModel extends Equatable {
         id,
         qrCode,
         qrCodeData,
+        faceTemplate,
         name,
         address,
         telephone,

@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../models/user_model.dart';
+import '../models/notification_settings.dart';
 import 'mock_data_repository.dart';
 
 /// Authentication repository - handles login, logout, and registration
@@ -174,6 +176,157 @@ class AuthRepository {
   /// Check if user is authenticated
   Future<bool> isAuthenticated() async {
     return await _apiClient.isAuthenticated();
+  }
+
+  /// Update user profile (name)
+  Future<AuthResult> updateUser({required String userId, String? name}) async {
+    try {
+      // Check if using mock mode
+      final token = await _apiClient.getAccessToken();
+      if (token != null && _mockDataRepository.isMockToken(token)) {
+        // Update mock user - return success with updated user
+        final success = _mockDataRepository.updateUserName(userId, name ?? '');
+        if (success) {
+          final mockUser = _mockDataRepository.getUserById(userId);
+          if (mockUser != null) {
+            final updatedUser = UserModel(
+              id: mockUser['id'] as String,
+              email: mockUser['email'] as String,
+              name: mockUser['name'] as String,
+              role: UserRole.fromString(mockUser['role'] as String),
+              isActive: mockUser['isActive'] as bool,
+              createdAt: DateTime.parse(mockUser['createdAt'] as String),
+              updatedAt: DateTime.now(),
+            );
+            return AuthResult.success(updatedUser);
+          }
+        }
+        return AuthResult.failure('Failed to update user');
+      }
+
+      // Real backend update via Supabase
+      final response = await _apiClient.patch(
+        '${ApiConstants.users}?id=eq.$userId',
+        data: name != null ? {'name': name} : {},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Fetch updated user
+        final userResponse = await _apiClient.get(
+          '${ApiConstants.users}?id=eq.$userId',
+        );
+
+        if (userResponse.statusCode == 200 &&
+            userResponse.data != null &&
+            (userResponse.data as List).isNotEmpty) {
+          final userData = (userResponse.data as List).first;
+          final updatedUser = UserModel.fromJson(userData);
+          return AuthResult.success(updatedUser);
+        }
+        return AuthResult.failure('Failed to fetch updated user');
+      }
+      return AuthResult.failure('Failed to update user profile');
+    } on DioException catch (e) {
+      final message =
+          e.response?.data?['msg'] ?? 'Failed to update user profile';
+      return AuthResult.failure(message);
+    } catch (e) {
+      return AuthResult.failure('An error occurred: $e');
+    }
+  }
+
+  /// Change password
+  Future<AuthResult> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      // Check if using mock mode
+      final token = await _apiClient.getAccessToken();
+      if (token != null && _mockDataRepository.isMockToken(token)) {
+        // Mock mode - simulate success
+        return AuthResult.success(UserModel(
+          id: 'mock-user',
+          email: 'mock@example.com',
+          name: 'Mock User',
+          role: UserRole.doctor,
+          isActive: true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ));
+      }
+
+      // Real backend update via Supabase Auth
+      final response = await _apiClient.put(
+        ApiConstants.userProfile,
+        data: {'password': newPassword},
+      );
+
+      if (response.statusCode == 200) {
+        return AuthResult.success(UserModel(
+          id: 'user',
+          email: 'user@example.com',
+          name: 'User',
+          role: UserRole.doctor,
+          isActive: true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ));
+      }
+      return AuthResult.failure('Failed to change password');
+    } on DioException catch (e) {
+      final message = e.response?.data?['msg'] ??
+          e.response?.data?['error_description'] ??
+          'Failed to change password';
+      return AuthResult.failure(message);
+    } catch (e) {
+      return AuthResult.failure('An error occurred: $e');
+    }
+  }
+
+  /// Get notification settings
+  Future<NotificationSettings> getNotificationSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final enabled = prefs.getBool('notification_enabled') ?? true;
+      final sound = prefs.getBool('notification_sound') ?? true;
+      final vibration = prefs.getBool('notification_vibration') ?? true;
+      return NotificationSettings(
+        enabled: enabled,
+        sound: sound,
+        vibration: vibration,
+      );
+    } catch (e) {
+      return const NotificationSettings();
+    }
+  }
+
+  /// Save notification settings
+  Future<void> saveNotificationSettings(NotificationSettings settings) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notification_enabled', settings.enabled);
+    await prefs.setBool('notification_sound', settings.sound);
+    await prefs.setBool('notification_vibration', settings.vibration);
+  }
+
+  /// Sync data with backend (placeholder for real sync functionality)
+  Future<bool> syncData() async {
+    try {
+      // Check if using mock mode
+      final token = await _apiClient.getAccessToken();
+      if (token != null && _mockDataRepository.isMockToken(token)) {
+        // Simulate sync delay
+        await Future.delayed(const Duration(seconds: 2));
+        return true;
+      }
+
+      // Real sync - fetch latest data
+      // This would typically sync patients, appointments, etc.
+      final response = await _apiClient.get(ApiConstants.patients);
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 }
 
